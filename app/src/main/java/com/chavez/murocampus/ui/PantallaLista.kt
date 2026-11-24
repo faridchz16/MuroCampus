@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -35,6 +38,9 @@ fun PantallaLista(
     val estado by vm.postsVisibles.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
     val textoBusqueda by vm.textoBusqueda.collectAsStateWithLifecycle()
+    val hayMas by vm.hayMas.collectAsStateWithLifecycle()
+    val cargandoMas by vm.cargandoMas.collectAsStateWithLifecycle()
+    val errorMas by vm.errorMas.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
         FiltroUsuarios(
@@ -64,7 +70,14 @@ fun PantallaLista(
                             SinPublicaciones()
                         }
                     } else {
-                        ListaPosts(posts = e.datos, onAbrir = onAbrir)
+                        ListaPosts(
+                            posts = e.datos,
+                            hayMas = hayMas,
+                            cargandoMas = cargandoMas,
+                            errorMas = errorMas,
+                            onCargarMas = { vm.cargarMas() },
+                            onAbrir = onAbrir
+                        )
                     }
                 }
             }
@@ -126,20 +139,87 @@ private fun FiltroUsuarios(
 @Composable
 private fun ListaPosts(
     posts: List<Post>,
+    hayMas: Boolean,
+    cargandoMas: Boolean,
+    errorMas: String?,
+    onCargarMas: () -> Unit,
     onAbrir: (Int) -> Unit
 ) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+    Column(modifier = Modifier.fillMaxSize()) {
+        Text(
+            text = "Mostrando ${posts.size} publicaciones",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+        )
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, bottom = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(posts, key = { it.id }) { post ->
+                TarjetaPost(
+                    usuarioId = post.userId,
+                    titulo = post.title,
+                    cuerpo = post.body,
+                    onClick = { onAbrir(post.id) }
+                )
+            }
+            item {
+                PieDeLista(
+                    hayMas = hayMas,
+                    cargandoMas = cargandoMas,
+                    errorMas = errorMas,
+                    onCargarMas = onCargarMas
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PieDeLista(
+    hayMas: Boolean,
+    cargandoMas: Boolean,
+    errorMas: String?,
+    onCargarMas: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        contentAlignment = Alignment.Center
     ) {
-        items(posts, key = { it.id }) { post ->
-            TarjetaPost(
-                usuarioId = post.userId,
-                titulo = post.title,
-                cuerpo = post.body,
-                onClick = { onAbrir(post.id) }
-            )
+        when {
+            cargandoMas -> {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            }
+            errorMas != null -> {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = errorMas,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    OutlinedButton(onClick = onCargarMas) {
+                        Text("Reintentar")
+                    }
+                }
+            }
+            hayMas -> {
+                OutlinedButton(
+                    onClick = onCargarMas,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Cargar más")
+                }
+            }
         }
     }
 }
