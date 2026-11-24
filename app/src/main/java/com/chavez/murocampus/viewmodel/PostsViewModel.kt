@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chavez.murocampus.data.PostRepository
 import com.chavez.murocampus.model.Comentario
+import com.chavez.murocampus.model.NuevoPost
 import com.chavez.murocampus.model.Post
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -28,6 +29,9 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     private val _detalle = MutableStateFlow<UiState<DetalleUi>>(UiState.Cargando)
     val detalle: StateFlow<UiState<DetalleUi>> = _detalle.asStateFlow()
+
+    private val _creacion = MutableStateFlow<UiState<Post>?>(null)
+    val creacion: StateFlow<UiState<Post>?> = _creacion.asStateFlow()
 
     private var trabajoLista: Job? = null
     private var trabajoDetalle: Job? = null
@@ -78,5 +82,23 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
             _detalle.value = UiState.Exito(DetalleUi(post, comentarios))
         }
+    }
+
+    fun publicar(titulo: String, texto: String) {
+        _creacion.value = UiState.Cargando
+        viewModelScope.launch {
+            val nuevo = NuevoPost(
+                userId = 1,
+                title = titulo.trim(),
+                body = texto.trim()
+            )
+            repo.crear(nuevo)
+                .onSuccess { _creacion.value = UiState.Exito(it) }
+                .onFailure { _creacion.value = UiState.Error(mensajeDe(it)) }
+        }
+    }
+
+    fun reiniciarCreacion() {
+        _creacion.value = null
     }
 }

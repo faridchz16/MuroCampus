@@ -9,6 +9,7 @@ import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -22,6 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.chavez.murocampus.data.PostRepositoryRemote
 import com.chavez.murocampus.data.remote.RetrofitClient
+import com.chavez.murocampus.ui.PantallaCrear
 import com.chavez.murocampus.ui.PantallaDetalle
 import com.chavez.murocampus.ui.PantallaLista
 import com.chavez.murocampus.ui.theme.MuroCampusTheme
@@ -49,9 +51,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MuroCampusApp(vm: PostsViewModel) {
     var idSeleccionado by rememberSaveable { mutableStateOf<Int?>(null) }
+    var mostrandoCrear by rememberSaveable { mutableStateOf(false) }
 
-    BackHandler(enabled = idSeleccionado != null) {
+    val enLista = idSeleccionado == null && !mostrandoCrear
+
+    BackHandler(enabled = !enLista) {
         idSeleccionado = null
+        mostrandoCrear = false
     }
 
     Scaffold(
@@ -64,22 +70,42 @@ fun MuroCampusApp(vm: PostsViewModel) {
                     titleContentColor = MaterialTheme.colorScheme.onPrimary
                 )
             )
+        },
+        floatingActionButton = {
+            if (enLista) {
+                FloatingActionButton(
+                    onClick = {
+                        vm.reiniciarCreacion()
+                        mostrandoCrear = true
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Text(
+                        text = "+",
+                        style = MaterialTheme.typography.headlineMedium
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         val id = idSeleccionado
-        if (id == null) {
-            PantallaLista(
+        when {
+            mostrandoCrear -> PantallaCrear(
+                vm = vm,
+                modifier = Modifier.padding(innerPadding)
+            )
+            id != null -> PantallaDetalle(
+                id = id,
+                vm = vm,
+                modifier = Modifier.padding(innerPadding)
+            )
+            else -> PantallaLista(
                 vm = vm,
                 onAbrir = { nuevoId ->
                     idSeleccionado = nuevoId
                     vm.abrir(nuevoId)
                 },
-                modifier = Modifier.padding(innerPadding)
-            )
-        } else {
-            PantallaDetalle(
-                id = id,
-                vm = vm,
                 modifier = Modifier.padding(innerPadding)
             )
         }
