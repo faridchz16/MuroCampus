@@ -10,8 +10,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 data class DetalleUi(
@@ -23,6 +26,30 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     private val _lista = MutableStateFlow<UiState<List<Post>>>(UiState.Cargando)
     val lista: StateFlow<UiState<List<Post>>> = _lista.asStateFlow()
+
+    private val _textoBusqueda = MutableStateFlow("")
+    val textoBusqueda: StateFlow<String> = _textoBusqueda.asStateFlow()
+
+    val postsVisibles: StateFlow<UiState<List<Post>>> = combine(_lista, _textoBusqueda) { estado, query ->
+        when (estado) {
+            is UiState.Exito -> {
+                val q = query.trim()
+                if (q.isEmpty()) {
+                    estado
+                } else {
+                    val filtrados = estado.datos.filter {
+                        it.title.contains(q, ignoreCase = true)
+                    }
+                    UiState.Exito(filtrados)
+                }
+            }
+            else -> estado
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = UiState.Cargando
+    )
 
     private val _usuarioFiltro = MutableStateFlow<Int?>(null)
     val usuarioFiltro: StateFlow<Int?> = _usuarioFiltro.asStateFlow()
@@ -38,6 +65,10 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     init {
         cargar()
+    }
+
+    fun buscar(texto: String) {
+        _textoBusqueda.value = texto
     }
 
     fun cargar() {

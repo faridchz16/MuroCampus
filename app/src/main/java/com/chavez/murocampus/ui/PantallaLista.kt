@@ -6,13 +6,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -29,13 +32,18 @@ fun PantallaLista(
     onAbrir: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val estado by vm.lista.collectAsStateWithLifecycle()
+    val estado by vm.postsVisibles.collectAsStateWithLifecycle()
     val filtro by vm.usuarioFiltro.collectAsStateWithLifecycle()
+    val textoBusqueda by vm.textoBusqueda.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
         FiltroUsuarios(
             seleccionado = filtro,
             onSeleccionar = { vm.filtrar(it) }
+        )
+        CampoBusqueda(
+            texto = textoBusqueda,
+            onTextoChange = { vm.buscar(it) }
         )
         Box(
             modifier = Modifier
@@ -50,7 +58,11 @@ fun PantallaLista(
                 )
                 is UiState.Exito -> {
                     if (e.datos.isEmpty()) {
-                        SinPublicaciones()
+                        if (textoBusqueda.trim().isNotEmpty()) {
+                            SinResultados(texto = textoBusqueda)
+                        } else {
+                            SinPublicaciones()
+                        }
                     } else {
                         ListaPosts(posts = e.datos, onAbrir = onAbrir)
                     }
@@ -58,6 +70,30 @@ fun PantallaLista(
             }
         }
     }
+}
+
+@Composable
+private fun CampoBusqueda(
+    texto: String,
+    onTextoChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedTextField(
+        value = texto,
+        onValueChange = onTextoChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        label = { Text("Buscar por título") },
+        singleLine = true,
+        trailingIcon = {
+            if (texto.isNotEmpty()) {
+                TextButton(onClick = { onTextoChange("") }) {
+                    Text("Limpiar")
+                }
+            }
+        }
+    )
 }
 
 @Composable
@@ -116,6 +152,20 @@ private fun SinPublicaciones() {
     ) {
         Text(
             text = "Sin publicaciones",
+            style = MaterialTheme.typography.bodyLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SinResultados(texto: String) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "Sin resultados para \"$texto\"",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
