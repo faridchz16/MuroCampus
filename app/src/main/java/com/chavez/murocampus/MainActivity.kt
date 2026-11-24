@@ -21,7 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.chavez.murocampus.data.PostRepositoryConCache
 import com.chavez.murocampus.data.PostRepositoryRemote
+import com.chavez.murocampus.data.local.MuroDatabase
 import com.chavez.murocampus.data.remote.RetrofitClient
 import com.chavez.murocampus.ui.PantallaCrear
 import com.chavez.murocampus.ui.PantallaDetalle
@@ -34,7 +36,12 @@ import com.chavez.murocampus.viewmodel.PostsViewModelFactory
 class MainActivity : ComponentActivity() {
 
     private val vm: PostsViewModel by viewModels {
-        PostsViewModelFactory(PostRepositoryRemote(RetrofitClient.api))
+        PostsViewModelFactory(
+            PostRepositoryConCache(
+                remoto = PostRepositoryRemote(RetrofitClient.api),
+                dao = MuroDatabase.obtener(applicationContext).postDao()
+            )
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
