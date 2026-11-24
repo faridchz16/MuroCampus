@@ -63,6 +63,9 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _borrado = MutableStateFlow<UiState<Int>?>(null)
     val borrado: StateFlow<UiState<Int>?> = _borrado.asStateFlow()
 
+    private val _edicion = MutableStateFlow<UiState<Post>?>(null)
+    val edicion: StateFlow<UiState<Post>?> = _edicion.asStateFlow()
+
     private var trabajoLista: Job? = null
     private var trabajoDetalle: Job? = null
 
@@ -156,5 +159,40 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun reiniciarBorrado() {
         _borrado.value = null
+    }
+
+    fun editar(id: Int, titulo: String) {
+        _edicion.value = UiState.Cargando
+        viewModelScope.launch {
+            repo.editar(id, titulo.trim())
+                .onSuccess { postEditado ->
+                    val estadoLista = _lista.value
+                    if (estadoLista is UiState.Exito) {
+                        _lista.value = UiState.Exito(
+                            estadoLista.datos.map { post ->
+                                if (post.id == id) post.copy(title = postEditado.title) else post
+                            }
+                        )
+                    }
+                    val estadoDetalle = _detalle.value
+                    if (estadoDetalle is UiState.Exito) {
+                        if (estadoDetalle.datos.post.id == id) {
+                            _detalle.value = UiState.Exito(
+                                estadoDetalle.datos.copy(
+                                    post = estadoDetalle.datos.post.copy(title = postEditado.title)
+                                )
+                            )
+                        }
+                    }
+                    _edicion.value = UiState.Exito(postEditado)
+                }
+                .onFailure {
+                    _edicion.value = UiState.Error(mensajeDe(it))
+                }
+        }
+    }
+
+    fun reiniciarEdicion() {
+        _edicion.value = null
     }
 }

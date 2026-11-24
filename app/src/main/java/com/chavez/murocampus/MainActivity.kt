@@ -25,6 +25,7 @@ import com.chavez.murocampus.data.PostRepositoryRemote
 import com.chavez.murocampus.data.remote.RetrofitClient
 import com.chavez.murocampus.ui.PantallaCrear
 import com.chavez.murocampus.ui.PantallaDetalle
+import com.chavez.murocampus.ui.PantallaEditar
 import com.chavez.murocampus.ui.PantallaLista
 import com.chavez.murocampus.ui.theme.MuroCampusTheme
 import com.chavez.murocampus.viewmodel.PostsViewModel
@@ -52,12 +53,19 @@ class MainActivity : ComponentActivity() {
 fun MuroCampusApp(vm: PostsViewModel) {
     var idSeleccionado by rememberSaveable { mutableStateOf<Int?>(null) }
     var mostrandoCrear by rememberSaveable { mutableStateOf(false) }
+    var editandoId by rememberSaveable { mutableStateOf<Int?>(null) }
+    var editandoTitulo by rememberSaveable { mutableStateOf<String?>(null) }
 
-    val enLista = idSeleccionado == null && !mostrandoCrear
+    val enLista = idSeleccionado == null && !mostrandoCrear && editandoId == null
 
     BackHandler(enabled = !enLista) {
-        idSeleccionado = null
-        mostrandoCrear = false
+        if (editandoId != null) {
+            editandoId = null
+            editandoTitulo = null
+        } else {
+            idSeleccionado = null
+            mostrandoCrear = false
+        }
     }
 
     Scaffold(
@@ -90,8 +98,17 @@ fun MuroCampusApp(vm: PostsViewModel) {
         }
     ) { innerPadding ->
         val id = idSeleccionado
+        val eId = editandoId
+        val eTitulo = editandoTitulo
+
         when {
             mostrandoCrear -> PantallaCrear(
+                vm = vm,
+                modifier = Modifier.padding(innerPadding)
+            )
+            eId != null && eTitulo != null -> PantallaEditar(
+                id = eId,
+                tituloActual = eTitulo,
                 vm = vm,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -101,6 +118,11 @@ fun MuroCampusApp(vm: PostsViewModel) {
                 onBorrado = {
                     idSeleccionado = null
                     vm.reiniciarBorrado()
+                },
+                onEditar = { editId, editTitulo ->
+                    vm.reiniciarEdicion()
+                    editandoId = editId
+                    editandoTitulo = editTitulo
                 },
                 modifier = Modifier.padding(innerPadding)
             )

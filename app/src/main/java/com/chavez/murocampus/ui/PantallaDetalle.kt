@@ -3,6 +3,7 @@ package com.chavez.murocampus.ui
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,6 +42,7 @@ fun PantallaDetalle(
     id: Int,
     vm: PostsViewModel,
     onBorrado: () -> Unit,
+    onEditar: (Int, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val estado by vm.detalle.collectAsStateWithLifecycle()
@@ -89,6 +92,7 @@ fun PantallaDetalle(
             detalle = e.datos,
             borrado = borrado,
             onBorrar = { mostrarDialogo = true },
+            onEditar = onEditar,
             modifier = modifier
         )
     }
@@ -99,6 +103,7 @@ private fun ContenidoDetalle(
     detalle: DetalleUi,
     borrado: UiState<Int>?,
     onBorrar: () -> Unit,
+    onEditar: (Int, String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -129,23 +134,34 @@ private fun ContenidoDetalle(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Button(
-                onClick = onBorrar,
-                enabled = borrado !is UiState.Cargando,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.error,
-                    contentColor = MaterialTheme.colorScheme.onError
-                ),
-                modifier = Modifier.fillMaxWidth()
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (borrado is UiState.Cargando) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onError,
-                        strokeWidth = 2.dp
-                    )
-                } else {
-                    Text("Eliminar")
+                OutlinedButton(
+                    onClick = { onEditar(detalle.post.id, detalle.post.title) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Editar título")
+                }
+                Button(
+                    onClick = onBorrar,
+                    enabled = borrado !is UiState.Cargando,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError
+                    ),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    if (borrado is UiState.Cargando) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onError,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Eliminar")
+                    }
                 }
             }
             if (borrado is UiState.Error) {

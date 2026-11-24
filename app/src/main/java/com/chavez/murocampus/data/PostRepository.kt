@@ -2,6 +2,7 @@ package com.chavez.murocampus.data
 
 import com.chavez.murocampus.data.remote.PostApi
 import com.chavez.murocampus.model.Comentario
+import com.chavez.murocampus.model.EditarPost
 import com.chavez.murocampus.model.NuevoPost
 import com.chavez.murocampus.model.Post
 import kotlinx.coroutines.CancellationException
@@ -14,6 +15,7 @@ interface PostRepository {
     suspend fun porUsuario(userId: Int): Result<List<Post>>
     suspend fun crear(nuevo: NuevoPost): Result<Post>
     suspend fun borrar(id: Int): Result<Unit>
+    suspend fun editar(id: Int, titulo: String): Result<Post>
 }
 
 class PostRepositoryRemote(private val api: PostApi) : PostRepository {
@@ -40,6 +42,9 @@ class PostRepositoryRemote(private val api: PostApi) : PostRepository {
                 throw HttpException(respuesta)
             }
         }
+
+    override suspend fun editar(id: Int, titulo: String): Result<Post> =
+        llamar { api.editar(id, EditarPost(title = titulo)) }
 
     private suspend fun <T> llamar(bloque: suspend () -> T): Result<T> =
         try {
