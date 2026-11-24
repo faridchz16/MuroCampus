@@ -60,6 +60,9 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     private val _creacion = MutableStateFlow<UiState<Post>?>(null)
     val creacion: StateFlow<UiState<Post>?> = _creacion.asStateFlow()
 
+    private val _borrado = MutableStateFlow<UiState<Int>?>(null)
+    val borrado: StateFlow<UiState<Int>?> = _borrado.asStateFlow()
+
     private var trabajoLista: Job? = null
     private var trabajoDetalle: Job? = null
 
@@ -93,6 +96,7 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
     }
 
     fun abrir(id: Int) {
+        _borrado.value = null
         trabajoDetalle?.cancel()
         _detalle.value = UiState.Cargando
         trabajoDetalle = viewModelScope.launch {
@@ -131,5 +135,26 @@ class PostsViewModel(private val repo: PostRepository) : ViewModel() {
 
     fun reiniciarCreacion() {
         _creacion.value = null
+    }
+
+    fun borrar(id: Int) {
+        _borrado.value = UiState.Cargando
+        viewModelScope.launch {
+            repo.borrar(id)
+                .onSuccess {
+                    val estadoLista = _lista.value
+                    if (estadoLista is UiState.Exito) {
+                        _lista.value = UiState.Exito(estadoLista.datos.filter { post -> post.id != id })
+                    }
+                    _borrado.value = UiState.Exito(id)
+                }
+                .onFailure {
+                    _borrado.value = UiState.Error(mensajeDe(it))
+                }
+        }
+    }
+
+    fun reiniciarBorrado() {
+        _borrado.value = null
     }
 }

@@ -98,6 +98,10 @@ fun MuroCampusApp(vm: PostsViewModel) {
             id != null -> PantallaDetalle(
                 id = id,
                 vm = vm,
+                onBorrado = {
+                    idSeleccionado = null
+                    vm.reiniciarBorrado()
+                },
                 modifier = Modifier.padding(innerPadding)
             )
             else -> PantallaLista(
