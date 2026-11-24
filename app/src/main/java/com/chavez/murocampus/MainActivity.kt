@@ -2,6 +2,7 @@ package com.chavez.murocampus
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
@@ -14,9 +15,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.chavez.murocampus.data.PostRepositoryRemote
 import com.chavez.murocampus.data.remote.RetrofitClient
+import com.chavez.murocampus.ui.PantallaDetalle
 import com.chavez.murocampus.ui.PantallaLista
 import com.chavez.murocampus.ui.theme.MuroCampusTheme
 import com.chavez.murocampus.viewmodel.PostsViewModel
@@ -42,6 +48,12 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MuroCampusApp(vm: PostsViewModel) {
+    var idSeleccionado by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    BackHandler(enabled = idSeleccionado != null) {
+        idSeleccionado = null
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -54,9 +66,22 @@ fun MuroCampusApp(vm: PostsViewModel) {
             )
         }
     ) { innerPadding ->
-        PantallaLista(
-            vm = vm,
-            modifier = Modifier.padding(innerPadding)
-        )
+        val id = idSeleccionado
+        if (id == null) {
+            PantallaLista(
+                vm = vm,
+                onAbrir = { nuevoId ->
+                    idSeleccionado = nuevoId
+                    vm.abrir(nuevoId)
+                },
+                modifier = Modifier.padding(innerPadding)
+            )
+        } else {
+            PantallaDetalle(
+                id = id,
+                vm = vm,
+                modifier = Modifier.padding(innerPadding)
+            )
+        }
     }
 }
